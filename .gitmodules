@@ -1,0 +1,3 @@
+[submodule "libs/getID3"]
+	path = libs/getID3
+	url = git@github.com:JamesHeinrich/getID3.git
