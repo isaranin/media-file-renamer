@@ -1,0 +1,109 @@
+<@decoration>
+
+
+<#-- ENTER project DATA here -->
+
+<#assign projectName = "Media file renamer">
+<#assign projectDescription = "
+	Rename media files photos/video/mp3 by it tags
+">
+<#assign projectUrl = "https://github.com/isaranin/media-file-renamer">
+<#assign projectRepo = "git@github.com:isaranin/media-file-renamer.git">
+<#assign projectLicense = "">
+
+<#-- ------ -->
+
+
+<#-- Prepare DEFAULTS and other -->
+	<#-- Set default project director to current user -->
+	<#if !projectDirector?? || projectDirector?length = 0>
+		<#assign projectDirector = user>
+	</#if>
+
+	<#-- Set default project company to current company -->
+	<#if !projectCompany?? || projectCompany?length = 0>
+		<#assign projectCompany = company>
+	</#if>
+
+	<#-- Set default project company url to current company url -->
+	<#if !projectCompanyUrl?? || projectCompanyUrl?length = 0>
+		<#assign projectCompanyUrl = url>
+	</#if>
+
+	<#-- Set default project name to name from NetBeans -->
+	<#if !projectName?? || projectName?length = 0>
+		<#assign projectName = project.displayName>
+	</#if>
+
+	<#-- Prepare description (may be multiline)
+		 trim all whitespace symbols from being and end of text -->
+	<#if projectDescription?? && projectDescription?length != 0>
+		<#assign projectDescription = projectDescription?replace("^\\s*|\\s*$","","rms")>
+	</#if>
+
+	<#-- Prepare license (may be multiline)
+		 trim all whitespace symbols from being and end of text -->
+	<#if projectLicense?? && projectLicense?length != 0>
+		<#assign projectLicense = projectLicense?replace("^\\s*|\\s*$","","rms")>
+	</#if>
+
+
+	<#assign emptyString = " ">
+<#-- ------ -->
+
+
+<#-- Exactly TEMPLATE begins -->
+
+	${projectName}
+
+	<#-- Show project url if exist -->
+	<#if projectUrl?? && projectUrl?length != 0>
+		${projectUrl}
+	</#if>
+
+	<#-- Show project description if exist -->
+	<#if projectDescription?? && projectDescription?length != 0>
+		${emptyString}
+		${projectDescription}
+	</#if>
+
+	${emptyString}
+
+	<#-- Show project repository if exist -->
+	<#if projectRepo?? && projectRepo?length != 0>
+		repository		${projectRepo}
+	</#if>
+	${emptyString}
+	author		${projectDirector}
+	company		${projectCompany}
+	url			${projectCompanyUrl}
+	copyright		(c) ${.now?date?string("YYYY")}, ${projectCompany}
+
+	<#-- Show license if exist -->
+	<#if projectLicense?? && projectLicense?length != 0>
+		${emptyString}
+		license:
+		${projectLicense}
+	</#if>
+	${emptyString}
+	${emptyString}
+	created by ${user}, on ${date}, at ${time}
+
+<#-- ------ -->
+
+
+</@decoration>
+<#-- This macro removes all empty strings,
+	 and also remove all tabs in string beginning,
+	 and add prefix sufix -->
+<#macro decoration>
+<#local captured><#nested></#local>
+<#if licenseFirst??>
+${licenseFirst}
+</#if>
+<#local captured>${captured?replace("^\\t+|^$\\n|\\n+\\z", "", "rm")}</#local>
+${captured?replace("^", licensePrefix, "rm")}
+<#if licenseLast??>
+${licenseLast}
+</#if>
+</#macro>
