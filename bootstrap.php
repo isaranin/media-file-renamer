@@ -22,7 +22,7 @@
  */
 
 require_once __DIR__.'/config/main.base.php';
-require_once __DIR__.'/lib/autoload.php';
+require_once __DIR__.'/libs/autoload.php';
 
 error_reporting($_CONFIG->main->dev?E_ALL:0 );
 
