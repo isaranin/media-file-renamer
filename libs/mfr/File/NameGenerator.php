@@ -17,6 +17,8 @@
  * created by Ivan Saranin <ivan@saranin.com>, on 04-Mar-2017, at 11:45:18
  */
 
+namespace MFR\File;
+
 /*
  * Module for NameGenerator class
  */
@@ -28,13 +30,13 @@ class NameGenerator {
 	private $EXIF_TIME_FORMAT = 'Y:m:d H:i:s';
 	
 	private $templateToFileData = [
-		'exif-maker-note' => 'MakerNote',
-		'exif-date-YYYY' => 'DateTimeOriginal',
-		'exif-date-mm' => 'DateTimeOriginal',
-		'exif-date-dd' => 'DateTimeOriginal',
-		'exif-date-H' => 'DateTimeOriginal',
-		'exif-date-i' => 'DateTimeOriginal',
-		'exif-date-s' => 'DateTimeOriginal',
+		'exif-maker-note' => 'EXIF-MakerNote',
+		'exif-date-YYYY' => 'EXIF-DateTimeOriginal',
+		'exif-date-mm' => 'EXIF-DateTimeOriginal',
+		'exif-date-dd' => 'EXIF-DateTimeOriginal',
+		'exif-date-H' => 'EXIF-DateTimeOriginal',
+		'exif-date-i' => 'EXIF-DateTimeOriginal',
+		'exif-date-s' => 'EXIF-DateTimeOriginal',
 	];
 	
 	protected function parseExifTime($aExifTime) {
@@ -46,7 +48,8 @@ class NameGenerator {
 		$res = true;
 		foreach(self::$templateToFileData as $template => $field) {
 			if (preg_match(sprintf('/\%%s/i',$template), $aTemplate) === 1) {
-				$res = isset($aData[$field]);
+				$fieldNames = explode('-', $field);
+				$res = isset($aData[$fieldNames[0]][$fieldNames[1]]);
 				if (!$res) {
 					$this->lastError = sprintf('Field %s not found in data, but exist in template %s, %s',
 							$field, $template, $aTemplate);
@@ -87,7 +90,10 @@ class NameGenerator {
 					);
 			return false;
 		}
-		if (isset($aTags['jpg']['exif']) && isset($aTags['jpg']['exif']['EXIF'])) {
+		if (isset($aTags['jpg']['exif'])) {
+			if (!$this->checkTemplateAndData($aTemplate, $aTags['jpg']['exif'])) {
+				return false;
+			}
 			$outFilename = $this->fillExifNames($aTemplate, $aTags['exif']['EXIF']);
 		}
 		
