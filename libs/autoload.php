@@ -23,3 +23,4 @@
 
 require_once __DIR__.'/getID3/getid3/getid3.php';
 require_once __DIR__.'/sa/autoload.php';
+require_once __DIR__.'/mfr/autoload.php';
