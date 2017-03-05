@@ -30,72 +30,107 @@ class NameGenerator {
 	private $EXIF_TIME_FORMAT = 'Y:m:d H:i:s';
 	
 	private $templateToFileData = [
-		'exif-maker-note' => 'EXIF-MakerNote',
-		'exif-date-YYYY' => 'EXIF-DateTimeOriginal',
-		'exif-date-mm' => 'EXIF-DateTimeOriginal',
-		'exif-date-dd' => 'EXIF-DateTimeOriginal',
-		'exif-date-H' => 'EXIF-DateTimeOriginal',
-		'exif-date-i' => 'EXIF-DateTimeOriginal',
-		'exif-date-s' => 'EXIF-DateTimeOriginal',
+		'exif-maker-note' => 'jpg-exif-EXIF-MakerNote',
+		'exif-date-YYYY' => 'jpg-exif-EXIF-DateTimeOriginal',
+		'exif-date-mm' => 'jpg-exif-EXIF-DateTimeOriginal',
+		'exif-date-dd' => 'jpg-exif-EXIF-DateTimeOriginal',
+		'exif-date-H' => 'jpg-exif-EXIF-DateTimeOriginal',
+		'exif-date-i' => 'jpg-exif-EXIF-DateTimeOriginal',
+		'exif-date-s' => 'jpg-exif-EXIF-DateTimeOriginal',
+		'ifd0-make' => 'jpg-exif-IFD0-Make',
+		'ifd0-model' => 'jpg-exif-IFD0-Model',
+		'ifd0-date-YYYY' => 'jpg-exif-IFD0-DateTime',
+		'ifd0-date-mm' => 'jpg-exif-IFD0-DateTime',
+		'ifd0-date-dd' => 'jpg-exif-IFD0-DateTime',
+		'ifd0-date-H' => 'jpg-exif-IFD0-DateTime',
+		'ifd0-date-i' => 'jpg-exif-IFD0-DateTime',
+		'ifd0-date-s' => 'jpg-exif-IFD0-DateTime',
+		'file-format' => 'fileformat'
 	];
 	
 	protected function parseExifTime($aExifTime) {
-		$date = date_parse_from_format(self::$EXIF_TIME_FORMAT, $aExifTime);
+		$date = date_parse_from_format($this->EXIF_TIME_FORMAT, $aExifTime);
 		return $date;
 	}
 	
-	protected function checkTemplateAndData($aTemplate, $aData) {
-		$res = true;
-		foreach(self::$templateToFileData as $template => $field) {
-			if (preg_match(sprintf('/\%%s/i',$template), $aTemplate) === 1) {
-				$fieldNames = explode('-', $field);
-				$res = isset($aData[$fieldNames[0]][$fieldNames[1]]);
-				if (!$res) {
-					$this->lastError = sprintf('Field %s not found in data, but exist in template %s, %s',
-							$field, $template, $aTemplate);
+	protected function getDateValue($value, $path) {
+		$res = '';
+		$date = $this->parseExifTime($value);
+		if ($date !== false && $date['year'] !== 0) {
+			if (preg_match('/date-(.*)/', $path, $matches) !== false) {
+				switch ($matches[1]) {
+					case 'YYYY':
+						$res = sprintf('%\'.02d', $date['year']);
+						break;
+					case 'mm':
+						$res = sprintf('%\'.02d', $date['month']);
+						break;
+					case 'dd':
+						$res = sprintf('%\'.02d', $date['day']);
+						break;
+					case 'H':
+						$res = sprintf('%\'.02d', $date['hour']);
+						break;
+					case 'i':
+						$res = sprintf('%\'.02d', $date['minute']);
+						break;
+					case 's':
+						$res = sprintf('%\'.02d', $date['second']);
+						break;
+				}
+					
+			}			
+		}
+		return $res;
+	}
+	
+	protected function fillTemplateFields($aTemplate, $aData) {
+		$res = preg_match_all('/%(.*?)%/', $aTemplate, $matches) !== false;
+		if ($res) {
+			$matches[1] = array_unique($matches[1]);
+			foreach($matches[1] as $fieldname) {
+				if (!isset($this->templateToFileData[$fieldname])) {
+					$this->lastError = sprintf('Field "%s" unknown',
+							$fieldname);
+					$res = false;
 					break;
 				}
+				$path = $this->templateToFileData[$fieldname];
+				$value = \SA\Sys\Arr::value_by_path($aData, $path);
+				if ($value === false) {
+					$this->lastError = sprintf('Field "%s" not found in data, path "%s"',
+							$fieldname, $path);
+					$res = false;
+					break;
+				}
+				$value = trim($value);
+				
+				if (strpos($fieldname, 'date') !== false) {
+					$newValue = $this->getDateValue($value, $fieldname);
+					if (empty($newValue)) {
+						$this->lastError = sprintf('Error data has wrong format %s for field %s', $value, $fieldname);
+						return false;
+					}
+					$value = $newValue;
+				}
+				
+				$aTemplate = str_replace('%'.$fieldname.'%', $value, $aTemplate);
 			}
 		}
-		return $res;
+		
+		return $aTemplate;
 	}
 	
-	protected function fillExifNames($aTemplate, $aExifData) {
-		
-		$originalTime = $this->parseExifTime(isset($aExifData['DateTimeOriginal'])?$aExifData['DateTimeOriginal']:'');
-		if (!$originalTime || $originalTime['year'] === '0000') {
-			$this->lastError = sprintf('Error exif data, has wrong format %s', $aExifData['DateTimeOriginal']);
-			return false;
-		}
-		
-		$replace = [
-			'%exif-maker-note%' => $aExifData['MakerNote'],
-			'%exif-date-YYYY%' => $originalTime['year'],
-			'%exif-date-mm%' => $originalTime['month'],
-			'%exif-date-dd%' => $originalTime['day'],
-			'%exif-date-H%' => $originalTime['hour'],
-			'%exif-date-i%' => $originalTime['minute'],
-			'%exif-date-s%' => $originalTime['second'],
-		];
-				
-		$res = strtr($aTemplate, $replace);
-		return $res;
-	}
-	
-	public function makeJpgName($aTemplate, $aTags) {
+	public function makeName($aTemplate, $aTags) {
 		if (!isset($aTags['jpg'])) {
-			$this->lastError = sptrinf('No jpg data found in file %s, file format %s', 
+			$this->lastError = sprintf('No jpg data found in file %s, file format %s', 
 					$aTags['filenamepath'],
 					$aTags['fileformat']
 					);
 			return false;
-		}
-		if (isset($aTags['jpg']['exif'])) {
-			if (!$this->checkTemplateAndData($aTemplate, $aTags['jpg']['exif'])) {
-				return false;
-			}
-			$outFilename = $this->fillExifNames($aTemplate, $aTags['exif']['EXIF']);
-		}
+		}		
+		
+		$outFilename = $this->fillTemplateFields($aTemplate, $aTags);
 		
 		if (preg_match_all('/%(.*?)%/', $outFilename, $matches) > 0) {
 			$this->lastError = sprintf('Can`t find fields for templates %s', 

@@ -23,7 +23,7 @@ namespace MFR;
  * Module for Renamer class
  */
 
-class Renamer extends SA\Log\ClassWithErrorLog{
+class Renamer extends \SA\Log\ClassWithErrorLog{
 	
 	protected $template;
 	
@@ -48,7 +48,9 @@ class Renamer extends SA\Log\ClassWithErrorLog{
 	}
 	
 	protected function moveFile($aSrc, $aDst) {
-		mkdir(dirname($aDst));
+		if (!file_exists(dirname($aDst))) {
+			mkdir(dirname($aDst), 0775, true);
+		}
 		$res = rename($aSrc, $aDst);
 		if (!$res) {
 			$this->epput('Can`t move file from "%s" to "%s"', $aSrc, $aDst);
@@ -74,43 +76,58 @@ class Renamer extends SA\Log\ClassWithErrorLog{
 	}
 	
 	protected function renameFilesInFolder($aFolder) {
-		$this->put('Scanning directory: %s', $aFolder);
-		$files = scandir($this->inFolder.$aFolder);
+		
+		$curFolder = $this->inFolder.'/'.$aFolder;
+		if (!file_exists($curFolder)) {
+			$this->epput('Directory "%s" not found ', $curFolder);
+			return false;
+		}
+		
+		$this->pput('Scanning directory: %s', $aFolder);
+		
+		$files = scandir($curFolder);
 		array_shift($files);
 		array_shift($files);
-		$this->put('Finded files: %d', count($files));
+		$this->pput('Finded files: %d', count($files));
 		foreach($files as $file) {
 			$partFilename = $aFolder.'/'.$file;
 			$fullFilename = $this->inFolder.$partFilename;
 			if (is_dir($fullFilename)) {
-				$this->put('File "%s" is directory', $fullFilename);
+				$this->pput('File "%s" is directory', $fullFilename);
 				$this->renameFilesInFolder($partFilename);
 				continue;
 			}
 			
-			$this->put('Analyzing file: %s', $fullFilename);
+			$this->pput('Analyzing file: %s', $fullFilename);
 			$tags = $this->getID3->analyze($fullFilename);
 			
-			$outFileName = $this->nameGenerator->makeJpgName($this->template, $tags);
+			$outFileName = $this->nameGenerator->makeName($this->template, $tags);
 			
 			if ($outFileName === false) {
 				$this->epput('Wrong template: %s ', $this->nameGenerator->lastError);
-				$this->moveFile($fullFilename, $this->wrongTemplateFolder.$partFilename);
+				$this->moveFile($fullFilename, 
+						$this->outFolder.'/'.$this->wrongTemplateFolder.'/'.$partFilename);
 				continue;
 			}
 			
+			$outFileName = $this->outFolder.'/'.$outFileName;
+			
 			if (file_exists($outFileName)) {
-				$this->put('Out file exist: %s', $outFileName);
+				$this->pput('Out file exist: %s', $outFileName);
 				if ($this->isFileSame($fullFilename, $outFileName)) {
 					$this->epput('Duplicate file: %s ', $outFileName);
-					$this->moveFile($fullFilename, $this->duplicateFolder.$partFilename);
+					$this->moveFile($fullFilename, 
+							$this->outFolder.'/'.$this->duplicateFolder.'/'.$partFilename);
 					continue;
 				}
 				$outFileName = $this->findNotExistIndex($outFileName);
-				$this->put('Making new index: %s', $outFileName);
+				$this->pput('Making new index: %s', $outFileName);
 			}
-			$this->put('Move file from "%s" to "%s"', $fullFilename, $outFileName);
-			$this->moveFile($fullFilename, $outFileName);
+			$this->pput('Move file from "%s" to "%s"', $fullFilename, $outFileName);
+			$res = $this->moveFile($fullFilename, $outFileName);
+			if (!$res) {
+				$this->epput('Can`t move file from "%s" to "%s" ', $fullFilename, $outFileName);
+			}
 		}
 	}
 	
@@ -118,7 +135,7 @@ class Renamer extends SA\Log\ClassWithErrorLog{
 		$this->template = $aTemplate;
 		$this->inFolder = $aInFolder;
 		$this->outFolder = $aOutFolder;
-		$this->put('Start rename files from "%s" to "%s", template "%s"', 
+		$this->pput('Start rename files from "%s" to "%s", template "%s"', 
 				$aInFolder, $aOutFolder, $aTemplate);
 		return $this->renameFilesInFolder('/');
 	}

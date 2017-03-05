@@ -26,14 +26,27 @@ namespace SA\Sys;
 class Arr {
 	static public function is_set($aArr, $aPath, $aDelimiter = '-') {
 		$pathArr = explode($aDelimiter, $aPath);
-		$curPath = array_shift($aPath);
+		$curPath = array_shift($pathArr);
 		
 		if (!isset($aArr[$curPath])) {
 			return false;
 		}
-		if (count($aPath) > 0) {
+		if (count($pathArr) > 0) {
 			return self::is_set($aArr[$curPath], implode($aDelimiter, $pathArr), $aDelimiter);
 		}
 		return true;
+	}
+	
+	static public function value_by_path($aArr, $aPath, $aDelimiter = '-') {
+		$pathArr = explode($aDelimiter, $aPath);
+		$curPath = array_shift($pathArr);
+		
+		if (!isset($aArr[$curPath])) {
+			return false;
+		}
+		if (count($pathArr) > 0) {
+			return self::value_by_path($aArr[$curPath], implode($aDelimiter, $pathArr), $aDelimiter);
+		}
+		return $aArr[$curPath];
 	}
 }

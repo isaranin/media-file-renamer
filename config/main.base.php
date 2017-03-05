@@ -30,3 +30,15 @@ $_CONFIG->main = (object)[
 	'timeZone' => 'Europe/Moscow'
 ];
 
+$_CONFIG->folders = (object) [
+	'base' => dirname(__DIR__)
+];
+
+$_CONFIG->folders->log = $_CONFIG->folders->base.'/.logs';
+$_CONFIG->folders->wrongTemplate ='/.wrong-template/';
+$_CONFIG->folders->duplicate ='/.duplicate/';
+
+$_CONFIG->templates = [
+	'standart-exif' => '%exif-maker-note%/%exif-date-YYYY%-%exif-date-mm%-%exif-date-dd%/%exif-date-YYYY%-%exif-date-mm%-%exif-date-dd%_%exif-date-H%-%exif-date-i%-%exif-date-s%.%file-format%',
+	'standart-ifd0' => '%ifd0-make%_%ifd0-model%/%ifd0-date-YYYY%-%ifd0-date-mm%-%ifd0-date-dd%/%ifd0-date-YYYY%-%ifd0-date-mm%-%ifd0-date-dd%_%ifd0-date-H%-%ifd0-date-i%-%ifd0-date-s%.%file-format%'
+];
