@@ -66,11 +66,12 @@ class Renamer extends \SA\Log\ClassWithErrorLog{
 		$i = 1;
 		$pathInfo = pathinfo($aFilename);
 		do {
-			$newFilename = sprintf('%s/%s-%d.%s',
+			$newFilename = sprintf('%s/%s_%\'.02d.%s',
 					$pathInfo['dirname'], 
 					$pathInfo['filename'], 
 					$i,
 					$pathInfo['extension']);
+			$i++;
 		} while (file_exists($newFilename));
 		return $newFilename;
 	}
@@ -100,6 +101,11 @@ class Renamer extends \SA\Log\ClassWithErrorLog{
 			
 			$this->pput('Analyzing file: %s', $fullFilename);
 			$tags = $this->getID3->analyze($fullFilename);
+			
+			if (isset($tags['error'])) {
+				$this->put('Error analyzing ', $tags['error']);
+				continue;
+			}
 			
 			$outFileName = $this->nameGenerator->makeName($this->template, $tags);
 			
