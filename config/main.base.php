@@ -42,6 +42,13 @@ $_CONFIG->files = (object) [
 	'replacement' => $_CONFIG->folders->base.'/replacement.json'
 ];
 
+
+// standart path 2014-01-01/12-01-01.jpg
+$stdTemplate = '%std-date|date|Y%-%std-date|date|m%-%std-date|date|d%/%std-date|date|H%-%std-date|date|i%-%std-date|date|s%.%file-format%';
 $_CONFIG->templates = [
-	'standart' => '%std-maker|replace%/%std-date|date|Y%-%std-date|date|m%-%std-date|date|d%/%std-date|date|H%-%std-date|date|i%-%std-date|date|s%.%file-format%',
+	'standart' => '%std-maker|replace%/'.$stdTemplate,
+	'standart-whatsapp' => 'whatsapp/'.$stdTemplate,
+	'standart-line' => 'line/'.$stdTemplate,
+	'standart-viber' => 'viber/'.$stdTemplate,
+	'standart-telegram' => 'telegram/'.$stdTemplate,
 ];
