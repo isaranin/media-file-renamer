@@ -1,0 +1,1 @@
+php -f "%~dp0get-tags.php" "%1" > "%~dp1%~n1.exif.log"
