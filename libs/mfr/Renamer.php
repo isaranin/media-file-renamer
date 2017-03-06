@@ -39,12 +39,26 @@ class Renamer extends \SA\Log\ClassWithErrorLog{
 	
 	protected $wrongTemplateFolder = '';
 	
+	private $replacementFile = '';
 	
-	public function __construct($aDuplicateFolder, $aWrongTemplateFolder) {
+	public function __construct($aDuplicateFolder, $aWrongTemplateFolder, $replacementFile = '') {
 		$this->getID3 = new \getID3();
 		$this->nameGenerator = new File\NameGenerator();
+		$this->replacementFile = $replacementFile;
+		$repl = [];
+		if (file_exists($replacementFile)) {
+			$repl = json_decode(file_get_contents($replacementFile), true);
+		}
+		$this->nameGenerator->replacement = $repl;
 		$this->duplicateFolder = $aDuplicateFolder;
 		$this->wrongTemplateFolder = $aWrongTemplateFolder;
+	}
+	
+	public function __destruct() {
+		if (!empty($this->replacementFile)) {
+			file_put_contents($this->replacementFile, 
+					json_encode($this->nameGenerator->replacement, JSON_PRETTY_PRINT));
+		}
 	}
 	
 	protected function moveFile($aSrc, $aDst) {
@@ -134,6 +148,11 @@ class Renamer extends \SA\Log\ClassWithErrorLog{
 			if (!$res) {
 				$this->epput('Can`t move file from "%s" to "%s" ', $fullFilename, $outFileName);
 			}
+		}
+		// check if cur dir is empty
+		if (!(new \FilesystemIterator($curFolder))->valid()) {
+			$this->pput('Removing empty folder %s', $curFolder);
+			rmdir($curFolder);
 		}
 	}
 	

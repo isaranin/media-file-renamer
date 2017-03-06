@@ -29,57 +29,48 @@ class NameGenerator {
 	
 	private $EXIF_TIME_FORMAT = 'Y:m:d H:i:s';
 	
+	private $STANDART_TIME_FORMAT = 'Y:m:d H:i:s';
+	
 	private $templateToFileData = [
 		'exif-maker-note' => 'jpg-exif-EXIF-MakerNote',
-		'exif-date-YYYY' => 'jpg-exif-EXIF-DateTimeOriginal',
-		'exif-date-mm' => 'jpg-exif-EXIF-DateTimeOriginal',
-		'exif-date-dd' => 'jpg-exif-EXIF-DateTimeOriginal',
-		'exif-date-H' => 'jpg-exif-EXIF-DateTimeOriginal',
-		'exif-date-i' => 'jpg-exif-EXIF-DateTimeOriginal',
-		'exif-date-s' => 'jpg-exif-EXIF-DateTimeOriginal',
+		'exif-date' => 'jpg-exif-EXIF-DateTimeOriginal',
 		'ifd0-make' => 'jpg-exif-IFD0-Make',
 		'ifd0-model' => 'jpg-exif-IFD0-Model',
-		'ifd0-date-YYYY' => 'jpg-exif-IFD0-DateTime',
-		'ifd0-date-mm' => 'jpg-exif-IFD0-DateTime',
-		'ifd0-date-dd' => 'jpg-exif-IFD0-DateTime',
-		'ifd0-date-H' => 'jpg-exif-IFD0-DateTime',
-		'ifd0-date-i' => 'jpg-exif-IFD0-DateTime',
-		'ifd0-date-s' => 'jpg-exif-IFD0-DateTime',
+		'ifd0-date' => 'jpg-exif-IFD0-DateTime',
+		'std-maker' => 'standart-maker',
+		'std-date' => 'standart-datetime',
 		'file-format' => 'fileformat'
 	];
 	
+	protected $SUPPORT_FORMATS = [
+		'jpg'
+	];
+	
+	public $replacement = [];
+		
 	protected function parseExifTime($aExifTime) {
 		$date = date_parse_from_format($this->EXIF_TIME_FORMAT, $aExifTime);
 		return $date;
 	}
 	
-	protected function getDateValue($value, $path) {
+	protected function getTypedValue($value, $type, $path, $params) {
 		$res = '';
-		$date = $this->parseExifTime($value);
-		if ($date !== false && $date['year'] !== 0) {
-			if (preg_match('/date-(.*)/', $path, $matches) !== false) {
-				switch ($matches[1]) {
-					case 'YYYY':
-						$res = sprintf('%\'.02d', $date['year']);
-						break;
-					case 'mm':
-						$res = sprintf('%\'.02d', $date['month']);
-						break;
-					case 'dd':
-						$res = sprintf('%\'.02d', $date['day']);
-						break;
-					case 'H':
-						$res = sprintf('%\'.02d', $date['hour']);
-						break;
-					case 'i':
-						$res = sprintf('%\'.02d', $date['minute']);
-						break;
-					case 's':
-						$res = sprintf('%\'.02d', $date['second']);
-						break;
+		switch ($type) {
+			case 'date':
+				$date = \DateTime::createFromFormat($this->STANDART_TIME_FORMAT, $value);
+				if ($date !== false && isset($params[0])) {
+					$res = $date->format($params[0]);
 				}
-					
-			}			
+				break;
+			case 'replace':
+				if (!isset($this->replacement[$path][$value])) {
+					$this->replacement[$path][$value] = $value;
+				}
+				$res = $this->replacement[$path][$value];
+				break;
+			default:
+				$res = $value;
+				break;
 		}
 		return $res;
 	}
@@ -88,7 +79,9 @@ class NameGenerator {
 		$res = preg_match_all('/%(.*?)%/', $aTemplate, $matches) !== false;
 		if ($res) {
 			$matches[1] = array_unique($matches[1]);
-			foreach($matches[1] as $fieldname) {
+			foreach($matches[1] as $fieldnamefull) {
+				$fieldParams = explode('|', $fieldnamefull);
+				$fieldname = array_shift($fieldParams);
 				if (!isset($this->templateToFileData[$fieldname])) {
 					$this->lastError = sprintf('Field "%s" unknown',
 							$fieldname);
@@ -105,16 +98,17 @@ class NameGenerator {
 				}
 				$value = trim($value);
 				
-				if (strpos($fieldname, 'date') !== false) {
-					$newValue = $this->getDateValue($value, $fieldname);
+				if (count($fieldParams) > 0) {
+					$type = array_shift($fieldParams);
+					$newValue = $this->getTypedValue($value, $type, $fieldname, $fieldParams);
 					if (empty($newValue)) {
-						$this->lastError = sprintf('Error data has wrong format %s for field %s', $value, $fieldname);
+						$this->lastError = sprintf('Error data has wrong format %s for field %s type %s', $value, $fieldname, $matches[1]);
 						return false;
 					}
 					$value = $newValue;
 				}
 				
-				$aTemplate = str_replace('%'.$fieldname.'%', $value, $aTemplate);
+				$aTemplate = str_replace('%'.$fieldnamefull.'%', $value, $aTemplate);
 			}
 		}
 		
@@ -122,8 +116,9 @@ class NameGenerator {
 	}
 	
 	public function makeName($aTemplate, $aTags) {
-		if (!isset($aTags['jpg'])) {
-			$this->lastError = sprintf('No jpg data found in file %s, file format %s', 
+		
+		if (!isset($aTags['fileformat']) || !in_array($aTags['fileformat'], $this->SUPPORT_FORMATS)) {
+			$this->lastError = sprintf('Format unsupported for file %s, file format %s', 
 					$aTags['filenamepath'],
 					$aTags['fileformat']
 					);

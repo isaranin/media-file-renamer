@@ -43,7 +43,8 @@ if (!isset($_CONFIG->templates[$template])) {
 }
 $template = $_CONFIG->templates[$template];
 
-$renamer = new MFR\Renamer($_CONFIG->folders->duplicate, $_CONFIG->folders->wrongTemplate);
+$renamer = new MFR\Renamer($_CONFIG->folders->duplicate, 
+		$_CONFIG->folders->wrongTemplate, $_CONFIG->files->replacement);
 $renamer->log =  new SA\Log\File($_CONFIG->folders->log.'/'.'status.log');
 $renamer->errorLog = new SA\Log\File($_CONFIG->folders->log.'/'.'error.log');
 
