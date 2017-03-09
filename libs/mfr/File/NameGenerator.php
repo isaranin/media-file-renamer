@@ -43,7 +43,7 @@ class NameGenerator {
 	];
 	
 	protected $SUPPORT_FORMATS = [
-		'jpg'
+		'jpg', 'mp4', 'avi'
 	];
 	
 	public $replacement = [];

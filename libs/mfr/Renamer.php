@@ -150,7 +150,7 @@ class Renamer extends \SA\Log\ClassWithErrorLog{
 			}
 		}
 		// check if cur dir is empty
-		if (!(new \FilesystemIterator($curFolder))->valid()) {
+		if (!(new \FilesystemIterator($curFolder))->valid() && ($aFolder !== '/')) {
 			$this->pput('Removing empty folder %s', $curFolder);
 			rmdir($curFolder);
 		}

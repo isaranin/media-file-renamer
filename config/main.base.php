@@ -44,11 +44,13 @@ $_CONFIG->files = (object) [
 
 
 // standart path 2014-01-01/12-01-01.jpg
-$stdTemplate = '%std-date|date|Y%-%std-date|date|m%-%std-date|date|d%/%std-date|date|H%-%std-date|date|i%-%std-date|date|s%.%file-format%';
+$stdTemplate = '%std-date|date|Y-m-d%/%std-date|date|H-i-s%.%file-format%';
+$stdTemplateMessages = '%std-date|date|Y-m%/%std-date|date|d_H-i-s%.%file-format%';
 $_CONFIG->templates = [
 	'standart' => '%std-maker|replace%/'.$stdTemplate,
-	'standart-whatsapp' => 'whatsapp/'.$stdTemplate,
-	'standart-line' => 'line/'.$stdTemplate,
-	'standart-viber' => 'viber/'.$stdTemplate,
-	'standart-telegram' => 'telegram/'.$stdTemplate,
+	'standart-phone' => 'phone/'.$stdTemplateMessages,
+	'standart-whatsapp' => 'whatsapp/'.$stdTemplateMessages,
+	'standart-line' => 'line/'.$stdTemplateMessages,
+	'standart-viber' => 'viber/'.$stdTemplateMessages,
+	'standart-telegram' => 'telegram/'.$stdTemplateMessages,
 ];
